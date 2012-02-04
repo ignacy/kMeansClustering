@@ -12,15 +12,15 @@ module KMeansClustering
     end
 
     def split_to_clusters(k)
-      cluster_assignements = []
-      @features_count.times { cluster_assignements << [0, 0] }
-
+      cluster_assignements = initialize_cluster_assignements
       centroids = random_centroids(k)
-
       cluster_changed = true
+
       while cluster_changed
         cluster_changed = false
+
         @features_count.times do |i|
+          
           minimal_distance = 9999; minimal_index = -1
           k.times do |kth|
             dist_kth_i = find_distances(centroids[kth], @data[i])
@@ -33,7 +33,7 @@ module KMeansClustering
           cluster_assignements[i] = minimal_index, minimal_distance**2
         end
 
-        
+
         k.times do |cent|
           points_in_cluster = []
           cluster_assignements.each_with_index do |assignement, index|
@@ -41,7 +41,6 @@ module KMeansClustering
               points_in_cluster << @data[index]
             end
           end
-
 
           cols = columns(points_in_cluster)
           @feature_size.times do |f|
@@ -60,6 +59,8 @@ module KMeansClustering
       Plotter.new(columns(@data)).plot
     end
 
+    private
+
     def find_distances(centroid, point)
       distances = 0
       point.each_with_index do |coordinate, i|
@@ -70,13 +71,15 @@ module KMeansClustering
     end
 
     def random_centroids(k)
-      feature_size = @data.first.length
       centroids = []
+      k.times { centroids << [] }
+
+      columns = columns(@data)
+
       k.times do |i|
-        centroids[i] = []
-        feature_size.times do |j|
-          mins ||= columns(@data)[j].min
-          maxes ||= columns(@data)[j].max
+        @feature_size.times do |j|
+          mins = columns[j].min
+          maxes = columns[j].max
           centroids[i][j] = mins + (maxes- mins) * (rand(10)/10.0)
         end
       end
@@ -92,7 +95,10 @@ module KMeansClustering
       [x_coordinates, y_coordinates]
     end
 
+    def initialize_cluster_assignements
+      assignements = @features_count.times.inject([]) { |a, _| a << [0, 0] }
+    end
   end
 end
 
-KMeansClustering::Clusterer.new.split_to_clusters(4)
+puts KMeansClustering::Clusterer.new.split_to_clusters(4)[0].inspect
