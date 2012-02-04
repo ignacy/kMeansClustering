@@ -3,53 +3,56 @@ require_relative "./data_reader"
 
 module KMeansClustering
   class Clusterer
+    attr_accessor :data, :features_number, :feature_size
+
     def initialize
       @data = DataReader.new("testSet.txt").read
+      @features_count = @data.size
+      @feature_size = @data.first.size
     end
 
     def split_to_clusters(k)
-      features_count = @data.size
-      feature_size = @data.first.size
-      clusterAssment = []
-      features_count.times { clusterAssment << [0, 0] }
+      cluster_assignements = []
+      @features_count.times { cluster_assignements << [0, 0] }
+
       centroids = random_centroids(k)
-      clusterChanged = true
-      while clusterChanged
-        clusterChanged = false
-        features_count.times do |i|
-          minDist = 999999999; minIndex = -1
+
+      cluster_changed = true
+      while cluster_changed
+        cluster_changed = false
+        @features_count.times do |i|
+          minimal_distance = 9999; minimal_index = -1
           k.times do |kth|
             dist_kth_i = find_distances(centroids[kth], @data[i])
-            if dist_kth_i < minDist
-              minDist = dist_kth_i
-              minIndex = kth
+            if dist_kth_i < minimal_distance
+              minimal_distance = dist_kth_i
+              minimal_index = kth
             end
           end
-
-          clusterChanged = (clusterAssment[i].first != minIndex)
-          clusterAssment[i] = minIndex, minDist**2
+          cluster_changed = (cluster_assignements[i].first != minimal_index)
+          cluster_assignements[i] = minimal_index, minimal_distance**2
         end
 
-        puts "=============="
-        puts centroids.inspect
-        k.times do |j|
+        
+        k.times do |cent|
           points_in_cluster = []
-          clusterAssment.each_with_index do |assignement, index|
-            if assignement.first == j
+          cluster_assignements.each_with_index do |assignement, index|
+            if assignement.first == cent
               points_in_cluster << @data[index]
             end
           end
 
 
           cols = columns(points_in_cluster)
-          feature_size.times do |f|
-            mins ||= cols[f].min
-            maxes ||= cols[f].max
-            centroids[j][f] = mins + (maxes - mins)
+          @feature_size.times do |f|
+            sum = cols[f].inject(:+)
+            centroids[cent][f] = sum / cols[f].size
           end
         end
+
+
       end
-      [centroids, clusterAssment]
+      [centroids, cluster_assignements]
     end
 
 
@@ -61,9 +64,9 @@ module KMeansClustering
       distances = 0
       point.each_with_index do |coordinate, i|
         sum = ((coordinate - centroid[i])**2)
-        distances += sum**0.5
+        distances += sum
       end
-      distances
+      distances**0.5
     end
 
     def random_centroids(k)
